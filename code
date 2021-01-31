@@ -1,0 +1,64 @@
+"""
+ALERT:
+需要下载ffmpeg工具进行合并
+如果F12打开后检测有key文件，需要把该文件一并copy并修改m3u8中的KEY文件指向路径../XXX.key
+"""
+import requests
+import os, re
+generation_new_m3u8 = "newindex.m3u8"
+need_download_m3u8 = 'index.m3u8'
+new_mp4_document = 'd:\\test\\combination.mp4'
+# 这里的URL是请求路径，一般情况下，URL配合M3U8文件里的指向地址拼接才是真正路径，所以需要f12看到真正的地址后在确定拼接方式
+url = 'xxxxxxxxxxx'
+
+# cmd_command = ffmpeg -allowed_extensions ALL -i index.m3u8 -c copy target.mp4
+
+
+def downLoadM3u8():
+    flag = 1
+    index_number = 0
+    o = open(need_download_m3u8, 'r')
+    for index, i in enumerate(o.readlines()):
+        if index >= index_number:
+            if re.findall(r'\.ts', i):
+                print('原始数据是{}'.format(i))
+                print('开始请求接口')
+                segment = requests.get(url=url + i.strip()).content
+                p = open('fileM3u8/' + str(flag) + '.ts', 'wb')
+                p.write(segment)
+                p.close()
+                print('完成了第{}部分,当前flag是{}'.format(index, flag))
+                flag += 1
+    o.close()
+
+
+def combinationFile():
+    print('开始合并文件')
+    objfile_list = os.listdir('fileM3u8')
+    objfile_list.sort(key=lambda x: int(x[:-3:]))
+    no = open("fileM3u8/"+ generation_new_m3u8, 'w')
+    p = open(need_download_m3u8, 'r')
+
+    objfile_list_tag = 0
+    for index, i in enumerate(p.readlines()):
+        if re.findall(r'\.ts', i):
+            no.write(objfile_list[objfile_list_tag] + '\n')
+            objfile_list_tag += 1
+        else:
+            no.write(i)
+    p.close()
+    no.close()
+
+
+def cmdCommand():
+    # execute cmd command
+    # 连续输入多行CMD需要用 && 来链接
+    cmd = "cd e:\\workspace\\untitled\\m3u8extract\\fileM3u8 &&" +'ffmpeg -allowed_extensions ALL -i ' + generation_new_m3u8 + ' -c copy ' + new_mp4_document
+    print(cmd)
+    os.system(cmd)
+
+
+if __name__ == '__main__':
+    downLoadM3u8()
+    combinationFile()
+    cmdCommand()
